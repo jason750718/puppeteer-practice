@@ -1,6 +1,13 @@
 const puppeteer = require('puppeteer');
 //引入cheerio
 const cheerio = require('cheerio');
+
+async function forloop() {
+    for (let i = 0; i < 1000000000; ++i) {
+
+    }
+    return Promise.resolve();
+}
 (async () => {
     const browser = await puppeteer.launch({
         headless: true
@@ -19,13 +26,14 @@ const cheerio = require('cheerio');
 
     let data = [];
     //我們把cheerio找到的資料轉成文字並存進data這個變數
-    await $('#videos > div > div').each(async (i, el) => {
+    $('#videos > div > div').each(async (i, el) => {
         if (i === 0) {
-            start_time = new Date().getTime();
-            console.log("delay!!!!!")
-            await delay(5000);
-            end_time = new Date().getTime();
-            console.log((end_time - start_time) / 1000 + "sec");
+            await forloop();
+            // start_time = new Date().getTime();
+            // console.log("delay!!!!!")
+            // await delay(5000);
+            // end_time = new Date().getTime();
+            // console.log((end_time - start_time) / 1000 + "sec");
         }
         console.log("i: " + i);
         let $2 = cheerio.load($(el).html());
