@@ -2,56 +2,52 @@ const puppeteer = require('puppeteer');
 //引入cheerio
 const cheerio = require('cheerio');
 
-async function forloop() {
-    for (let i = 0; i < 1000000000; ++i) {
-
-    }
-    return Promise.resolve();
-}
 (async () => {
     const browser = await puppeteer.launch({
         headless: true
     });
     const page = await browser.newPage();
-    await page.goto('https://javdb.com/actors/bvWB');
-
-    //先等待網頁載入到底下的section的html標籤，不然有時候執行太快抓不到網頁
-    await page.waitForSelector('section')
-
-    //把網頁的body抓出來
-    let body = await page.content()
-
-    //接著我們把他丟給cheerio去處理
-    let $ = await cheerio.load(body)
 
     let data = [];
-    //我們把cheerio找到的資料轉成文字並存進data這個變數
-    $('#videos > div > div').each(async (i, el) => {
-        if (i === 0) {
-            await forloop();
-            // start_time = new Date().getTime();
-            // console.log("delay!!!!!")
-            // await delay(5000);
-            // end_time = new Date().getTime();
-            // console.log((end_time - start_time) / 1000 + "sec");
-        }
-        console.log("i: " + i);
-        let $2 = cheerio.load($(el).html());
+    let pageNum = 1, pageLen = 0;
+    while (true) {
+        // https://javdb.com/actors/bvWB?page=1
+        let url = 'https://javdb.com/actors/bvWB?page=' + pageNum;
+        await page.goto(url);
+        await page.waitForSelector('section')
+        let body = await page.content()
+        let $ = await cheerio.load(body)//我們把cheerio找到的資料轉成文字並存進data這個變數
 
-        //text是抓取文字, trim是去頭尾空字串
-        let number = $2('a > div.uid').text().trim();
-        //let title = $2('a > div.video-title').text().trim();
-        let title = "";
-        let href = $2('a').attr('href');
-        let tmp = {
-            order: i,
-            number: number,
-            title: title,
-            href: href
+        // 取得最大頁數
+        if (pageLen === 0) {
+            pageLen = $('.pagination-list').find('li').length;
         }
-        data.push(tmp)
-        console.log("data.length : " + data.length)
-    })
+
+        $('#videos > div > div').each((j, el) => {
+            const $el = $(el);
+            let order = j;
+            //text是抓取文字, trim是去頭尾空字串
+            let uid = (pageNum - 1) * 40 + order;
+            let number = $el.find('a > div.uid').text().trim();
+            let title = $el.find('a > div.video-title').text().trim();
+            let href = $el.find('a').attr('href');
+            let tmp = {
+                uid: uid,
+                pageNum: pageNum,
+                order: order,
+                number: number,
+                title: title,
+                href: href
+            }
+            data.push(tmp)
+        })
+        pageNum++;
+
+        if (pageNum > pageLen) {
+            break;
+        }
+    }
+
     const fs = require('fs');
     const content = JSON.stringify(data); //轉換成json格式
     fs.writeFile("javdb.json", content, 'utf8', function (err) {
@@ -63,10 +59,6 @@ async function forloop() {
 
     console.table(data)
     console.log("end: " + data.length)
-    //並再終端機print出來
-    //console.log(data)
-    //console.log("main proc");
-
     await browser.close()
 })();
 
